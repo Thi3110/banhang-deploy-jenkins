@@ -4,6 +4,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# ⚙️ FIX: lỗi OpenSSL cho Node 17+
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 RUN npm run build
 
 # Stage 2: Serve static files
