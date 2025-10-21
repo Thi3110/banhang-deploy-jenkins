@@ -2,11 +2,13 @@ FROM node:18
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package.json từ thư mục back-end
+COPY back-end/package*.json ./
 RUN npm install
 
-COPY . .
+# Copy toàn bộ code backend vào container
+COPY back-end ./
 
-EXPOSE 3000
+EXPOSE 5000
 
 CMD ["npm", "start"]
