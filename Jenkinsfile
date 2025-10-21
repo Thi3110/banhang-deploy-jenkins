@@ -30,9 +30,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
                     usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        cd back-end
-                        echo "🔧 Building image $DOCKER_USER/$IMAGE_NAME:latest ..."
-                        docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
+                    docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
+
                     '''
                 }
             }
