@@ -2,63 +2,48 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL = 'https://github.com/Thi3110/banhang-deploy-jenkins.git'
-        IMAGE_NAME = 'thiphamngoc/banhang-backend:latest'
+        GITHUB_REPO = 'https://github.com/Thi3110/banhang-deploy-jenkins.git'
+        DOCKER_HUB_USER = 'thiphamngoc'
+        IMAGE_BACKEND = 'banhang-backend'
     }
 
     stages {
-
         stage('Checkout Source') {
             steps {
                 echo '🔑 Cloning source code from GitHub...'
-                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_PAT')]) {
-                    sh '''
-                        echo "➡️ Removing old files..."
-                        rm -rf Dockerfile Jenkinsfile back-end client .git
-
-                        echo "➡️ Cloning repository..."
-                        git config --global user.name "Thi3110"
-                        git config --global user.email "thi98793@donga.edu.vn"
-                        git clone https://${GITHUB_PAT}@github.com/Thi3110/banhang-deploy-jenkins.git .
-                    '''
-                }
+                checkout scm
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Backend Image') {
             steps {
-                echo '🐳 Building Docker image...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        cd back-end
-                        echo "🔧 Building image ${IMAGE_NAME} ..."
-                        docker build -t ${IMAGE_NAME} .
-                    '''
-                }
+                echo '🐳 Building backend image...'
+                sh '''
+                    cd back-end
+                    docker build -t ${DOCKER_HUB_USER}/${IMAGE_BACKEND}:latest .
+                '''
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Push Backend Image') {
             steps {
                 echo '📦 Pushing image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-                        docker push ${IMAGE_NAME}
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push ${DOCKER_HUB_USER}/${IMAGE_BACKEND}:latest
                     '''
                 }
             }
         }
 
-        stage('Deploy Container Locally') {
+        stage('Deploy to Server') {
             steps {
-                echo '🚀 Deploying container locally...'
+                echo '🚀 Deploying containers via Docker Compose...'
                 sh '''
-                    echo "🧹 Cleaning old container if exists..."
-                    docker ps -q --filter "name=banhang-backend" | grep -q . && docker stop banhang-backend && docker rm banhang-backend || true
-
-                    echo "🚀 Running new container..."
-                    docker run -d -p 3000:3000 --name banhang-backend ${IMAGE_NAME}
+                    docker compose down
+                    docker compose pull
+                    docker compose up -d --build
                 '''
             }
         }
@@ -66,10 +51,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build & Deploy completed successfully!'
+            echo '✅ CI/CD completed successfully!'
         }
         failure {
-            echo '❌ Build failed! Check Jenkins console output for details.'
+            echo '❌ Build or deploy failed. Check Jenkins logs.'
         }
     }
 }
