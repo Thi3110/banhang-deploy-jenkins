@@ -3,21 +3,22 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/Thi3110/banhang-deploy-jenkins.git'
-        IMAGE_NAME = 'banhang-backend'
+        IMAGE_NAME = 'thiphamngoc/banhang-backend:latest'
     }
 
     stages {
+
         stage('Checkout Source') {
             steps {
                 echo '🔑 Cloning source code from GitHub...'
                 withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_PAT')]) {
                     sh '''
                         echo "➡️ Removing old files..."
-                        rm -rf * .git
+                        rm -rf Dockerfile Jenkinsfile back-end client .git
 
                         echo "➡️ Cloning repository..."
                         git config --global user.name "Thi3110"
-                        git config --global user.email "thi3110@example.com"
+                        git config --global user.email "thi98793@donga.edu.vn"
                         git clone https://${GITHUB_PAT}@github.com/Thi3110/banhang-deploy-jenkins.git .
                     '''
                 }
@@ -27,11 +28,11 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                    docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
-
+                        cd back-end
+                        echo "🔧 Building image ${IMAGE_NAME} ..."
+                        docker build -t ${IMAGE_NAME} .
                     '''
                 }
             }
@@ -40,11 +41,10 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 echo '📦 Pushing image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_USER/$IMAGE_NAME:latest
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                        docker push ${IMAGE_NAME}
                     '''
                 }
             }
@@ -57,12 +57,8 @@ pipeline {
                     echo "🧹 Cleaning old container if exists..."
                     docker ps -q --filter "name=banhang-backend" | grep -q . && docker stop banhang-backend && docker rm banhang-backend || true
 
-   sh '''
-    echo "🚀 Running new container..."
-    docker run -d -p 3000:3000 --name banhang-backend thiphamngoc/banhang-backend:latest
-'''
-
-                    echo "✅ Container deployed successfully!"
+                    echo "🚀 Running new container..."
+                    docker run -d -p 3000:3000 --name banhang-backend ${IMAGE_NAME}
                 '''
             }
         }
