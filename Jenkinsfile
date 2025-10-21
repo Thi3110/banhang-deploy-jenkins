@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/Thi3110/banhang-deploy-jenkins.git'
+        IMAGE_NAME = 'banhang-backend'
     }
 
     stages {
@@ -17,36 +18,51 @@ pipeline {
                         echo "➡️ Cloning repository..."
                         git config --global user.name "Thi3110"
                         git config --global user.email "thi3110@example.com"
-
                         git clone https://${GITHUB_PAT}@github.com/Thi3110/banhang-deploy-jenkins.git .
                     '''
                 }
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                echo '⚙️ Building project...'
-                // 👉 Nếu bạn có Dockerfile, bật dòng sau:
-                // sh 'docker build -t thi3110/banhang-deploy-jenkins:latest .'
+                echo '🐳 Building Docker image...'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
+                    usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        cd back-end
+                        echo "🔧 Building image $DOCKER_USER/$IMAGE_NAME:latest ..."
+                        docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
+                    '''
+                }
             }
         }
 
-        stage('Test') {
+        stage('Push to Docker Hub') {
             steps {
-                echo '🧪 Running tests...'
-                // 👉 Nếu có test (npm, dotnet, pytest...) thêm lệnh vào đây
-                // sh 'npm test'
+                echo '📦 Pushing image to Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
+                    usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $DOCKER_USER/$IMAGE_NAME:latest
+                    '''
+                }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Container Locally') {
             steps {
-                echo '🚀 Deploying application...'
-                // 👉 Bạn có thể thêm lệnh SSH hoặc Docker Compose ở đây.
-                // Ví dụ:
-                // sh 'scp docker-compose.yml root@103.20.96.174:/root/project/'
-                // sh 'ssh root@103.20.96.174 "cd /root/project && docker compose up -d --build"'
+                echo '🚀 Deploying container locally...'
+                sh '''
+                    echo "🧹 Cleaning old container if exists..."
+                    docker ps -q --filter "name=banhang-backend" | grep -q . && docker stop banhang-backend && docker rm banhang-backend || true
+
+                    echo "🚀 Running new container..."
+                    docker run -d -p 3000:3000 --name banhang-backend $DOCKER_USER/$IMAGE_NAME:latest
+
+                    echo "✅ Container deployed successfully!"
+                '''
             }
         }
     }
