@@ -57,8 +57,10 @@ pipeline {
                     echo "🧹 Cleaning old container if exists..."
                     docker ps -q --filter "name=banhang-backend" | grep -q . && docker stop banhang-backend && docker rm banhang-backend || true
 
-                    echo "🚀 Running new container..."
-                    docker run -d -p 3000:3000 --name banhang-backend $DOCKER_USER/$IMAGE_NAME:latest
+   sh '''
+    echo "🚀 Running new container..."
+    docker run -d -p 3000:3000 --name banhang-backend thiphamngoc/banhang-backend:latest
+'''
 
                     echo "✅ Container deployed successfully!"
                 '''
