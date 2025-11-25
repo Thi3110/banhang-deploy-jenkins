@@ -1,0 +1,14 @@
+.userDropdown {
+  display: none;
+}
+
+.userDropdownBtn:hover .userDropdown {
+  display: block;
+  display: flex;
+  flex-direction: column;
+  transition: all 1s;
+}
+
+.content {
+  padding-top: 60px; /* Điều chỉnh giá trị này theo chiều cao của navbar */
+}
