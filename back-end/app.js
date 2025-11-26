@@ -42,7 +42,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Middleware
 app.use(morgan("dev"));
 app.use(cookieParser());
-app.use(cors());
+// app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
