@@ -43,6 +43,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.use(morgan("dev"));
 app.use(cookieParser());
 // app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "https://banhang-frontend.onrender.com"], 
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: false 
+}));
 app.use(cors({ origin: "*" }));
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
