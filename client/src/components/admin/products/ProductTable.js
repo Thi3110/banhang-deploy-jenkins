@@ -18,16 +18,21 @@ const AllProduct = (props) => {
 
   const fetchData = async () => {
     setLoading(true);
-    let responseData = await getAllProduct();
-    setTimeout(() => {
-      if (responseData && responseData.Products) {
-        dispatch({
-          type: "fetchProductsAndChangeState",
-          payload: responseData.Products,
-        });
+    try {
+      let responseData = await getAllProduct();
+      setTimeout(() => {
+        if (responseData && responseData.Products) {
+          dispatch({
+            type: "fetchProductsAndChangeState",
+            payload: responseData.Products,
+          });
+        }
         setLoading(false);
-      }
-    }, 1000);
+      }, 1000);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setLoading(false);
+    }
   };
 
   const deleteProductReq = async (pId) => {
@@ -129,19 +134,27 @@ const ProductTable = ({ product, deleteProduct, editProduct }) => {
     <Fragment>
       <tr>
         <td className="p-2 text-left">
-          {product.pName.length > 15
-            ? product.pDescription.substring(1, 15) + "..."
-            : product.pName}
+          {product.pName
+            ? product.pName.length > 15
+              ? product.pName.substring(0, 15) + "..."
+              : product.pName
+            : "N/A"}
         </td>
         <td className="p-2 text-left">
-          {product.pDescription.slice(0, 15)}...
+          {product.pDescription
+            ? product.pDescription.slice(0, 15) + "..."
+            : "N/A"}
         </td>
         <td className="p-2 text-center">
-          <img
-            className="w-12 h-12 object-cover object-center"
-            src={`${apiURL}/uploads/products/${product.pImages[0]}`}
-            alt="pic"
-          />
+          {product.pImages && product.pImages.length > 0 ? (
+            <img
+              className="w-12 h-12 object-cover object-center"
+              src={`${apiURL}/uploads/products/${product.pImages[0]}`}
+              alt="pic"
+            />
+          ) : (
+            <span className="text-gray-400">No image</span>
+          )}
         </td>
         <td className="p-2 text-center">
           {product.pStatus === "Active" ? (
@@ -155,7 +168,9 @@ const ProductTable = ({ product, deleteProduct, editProduct }) => {
           )}
         </td>
         <td className="p-2 text-center">{product.pQuantity}</td>
-        <td className="p-2 text-center">{product.pCategory.cName}</td>
+        <td className="p-2 text-center">
+          {product.pCategory ? product.pCategory.cName : "N/A"}
+        </td>
         <td className="p-2 text-center">{product.pOffer}</td>
         <td className="p-2 text-center">
           {moment(product.createdAt).format("lll")}
@@ -206,3 +221,4 @@ const ProductTable = ({ product, deleteProduct, editProduct }) => {
 };
 
 export default AllProduct;
+export { ProductTable };
